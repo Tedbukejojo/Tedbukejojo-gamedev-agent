@@ -57,26 +57,33 @@ def salvar_banco_vetorial(vectorstore, caminho):
     vectorstore.save_local(caminho)
 
 
+def carregar_banco_vetorial(caminho):
+    """
+    Carrega um índice FAISS previamente salvo em disco,
+    sem precisar gerar os embeddings novamente.
+    """
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+    return FAISS.load_local(
+        caminho,
+        embeddings,
+        allow_dangerous_deserialization=True,
+    )
+
+
 # Bloco de teste
 if __name__ == "__main__":
-    import sys
-    sys.path.append("..")
-    from src.document_loader import carregar_todos_documentos
+    caminho_indice = "../data/faiss_index"
 
-    documentos = carregar_todos_documentos("../data/documentos")
+    print("Carregando banco vetorial salvo...")
+    vectorstore = carregar_banco_vetorial(caminho_indice)
 
-    todos_textos = []
-    todos_metadados = []
+    pergunta_teste = "O que é o Godot Engine?"
+    resultados = vectorstore.similarity_search(pergunta_teste, k=3)
 
-    for nome_arquivo, texto in documentos.items():
-        chunks = dividir_em_chunks(texto)
-        for chunk in chunks:
-            todos_textos.append(chunk)
-            todos_metadados.append({"fonte": nome_arquivo})
+    print(f"\nPergunta: {pergunta_teste}")
+    print(f"Top {len(resultados)} chunks mais relevantes encontrados:\n")
 
-    print(f"Total de chunks a serem transformados em embeddings: {len(todos_textos)}")
-
-    vectorstore = criar_banco_vetorial(todos_textos, todos_metadados)
-    salvar_banco_vetorial(vectorstore, "../data/faiss_index")
-
-    print("Banco vetorial criado e salvo com sucesso!")
+    for i, resultado in enumerate(resultados, start=1):
+        print(f"--- Resultado {i} (fonte: {resultado.metadata['fonte']}) ---")
+        print(resultado.page_content[:200])
+        print()
