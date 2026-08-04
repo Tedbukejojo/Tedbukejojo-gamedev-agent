@@ -38,7 +38,12 @@ if pergunta:
     with st.chat_message("assistant"):
         with st.spinner("Buscando na base de conhecimento..."):
             resposta, fontes = responder_pergunta(pergunta, vectorstore)
-            texto_final = resposta + f"\n\n*Fontes: {', '.join(fontes)}*"
+
+            if "não encontrei" in resposta.lower():
+                texto_final = resposta
+            else:
+                texto_final = resposta + f"\n\n*Fontes: {', '.join(fontes)}*"
+
             st.markdown(texto_final)
 
     st.session_state.mensagens.append({"role": "assistant", "content": texto_final})
