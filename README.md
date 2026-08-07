@@ -71,15 +71,16 @@ Resposta em linguagem natural
 gamedev-agent/
 │
 ├── data/
-│   └── documentos/          # PDFs usados como base de conhecimento
+│   └── documentos/              # PDFs usados como base de conhecimento
 │
 ├── src/
-│   ├── document_loader.py   # Leitura dos PDFs
-│   ├── vector_store.py      # Chunking, embeddings e banco vetorial (FAISS)
-│   ├── rag_agent.py         # Lógica do agente RAG (busca + geração de resposta)
-│   └── app.py                # Interface Streamlit
+│   ├── document_loader.py       # Leitura dos PDFs
+│   ├── vector_store.py          # Chunking, embeddings e banco vetorial (FAISS)
+│   ├── reconstruir_indice.py    # Script para reconstruir o índice ao adicionar novos documentos
+│   ├── rag_agent.py             # Lógica do agente RAG (busca + geração de resposta)
+│   └── app.py                    # Interface Streamlit
 │
-├── .env.example              # Modelo de variáveis de ambiente (sem chaves reais)
+├── .env.example                  # Modelo de variáveis de ambiente (sem chaves reais)
 ├── .gitignore
 ├── requirements.txt
 └── README.md
@@ -124,6 +125,7 @@ Digite uma pergunta sobre desenvolvimento de jogos com Godot na caixa de chat, o
 - O que é o Godot Engine?
 - Qual linguagem de programação o Godot utiliza?
 - Como organizar as pastas de um projeto no Godot?
+- Como resolver problemas comuns no Godot?
 
 ## Exemplos de respostas
 
@@ -141,9 +143,9 @@ Digite uma pergunta sobre desenvolvimento de jogos com Godot na caixa de chat, o
 
 ## Limitações
 
-- A base de conhecimento atual contém apenas 3 páginas da documentação do Godot Engine, com fins de demonstração — não cobre a documentação completa.
+- A base de conhecimento atual contém 4 páginas da documentação do Godot Engine, com fins de demonstração — não cobre a documentação completa.
 - O pacote `langchain-community` (usado para o FAISS) foi anunciado como "sunset" pela equipe do LangChain, e está em modo de manutenção, sem novas funcionalidades.
-- O tier gratuito da API do Gemini possui limite de requisições por minuto; a geração do banco vetorial é feita em lotes pequenos para respeitar esse limite.
+- O tier gratuito da API do Gemini possui limite de requisições por minuto; a geração do banco vetorial é feita em lotes pequenos, com pausas entre eles, para respeitar esse limite.
 - O agente não mantém memória de perguntas anteriores durante a geração da resposta — cada pergunta é processada de forma independente.
 
 ## Deploy na OCI
