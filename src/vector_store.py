@@ -20,11 +20,14 @@ def dividir_em_chunks(texto, tamanho_chunk=1000, sobreposicao=100):
 load_dotenv()
 
 
-def criar_banco_vetorial(textos, metadados, tamanho_lote=10, pausa_segundos=6):
+def criar_banco_vetorial(textos, metadados, tamanho_lote=8, pausa_segundos=12, caminho_salvar=None):
     """
     Gera os embeddings e monta o índice FAISS em lotes pequenos,
     com uma pausa entre eles, para não estourar o limite de requisições
     do tier gratuito da API do Gemini.
+
+    Se caminho_salvar for informado, salva o progresso em disco após
+    cada lote, para não perder o trabalho já feito em caso de erro.
     """
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     vectorstore = None
@@ -42,6 +45,9 @@ def criar_banco_vetorial(textos, metadados, tamanho_lote=10, pausa_segundos=6):
             vectorstore = FAISS.from_texts(lote_textos, embeddings, metadatas=lote_metadados)
         else:
             vectorstore.add_texts(lote_textos, metadatas=lote_metadados)
+
+        if caminho_salvar:
+            vectorstore.save_local(caminho_salvar)
 
         if numero_lote < total_lotes:
             time.sleep(pausa_segundos)
