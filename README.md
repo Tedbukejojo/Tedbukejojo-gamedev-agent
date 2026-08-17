@@ -148,13 +148,20 @@ Digite uma pergunta sobre desenvolvimento de jogos com Godot na caixa de chat, o
 - O tier gratuito da API do Gemini possui limite de requisições por minuto; a geração do banco vetorial é feita em lotes pequenos, com pausas entre eles, para respeitar esse limite.
 - O agente não mantém memória de perguntas anteriores durante a geração da resposta — cada pergunta é processada de forma independente.
 
-## Deploy na OCI
+## Deploy
 
-*(Seção a ser preenchida após a conclusão das Fases 16 e 17.)*
+O plano original do projeto previa o deploy na Oracle Cloud Infrastructure (OCI), conforme exigido pelo Challenge. Uma Compute Instance (VM.Standard.A1.Flex, Ampere/ARM, tier Always Free) foi criada com sucesso na OCI, porém o acesso via SSH à instância apresentou um erro persistente de conexão recusada (`Connection refused` na porta 22), mesmo após a configuração correta da Lista de Segurança (Security List) liberando a porta 22. Não foi possível diagnosticar e corrigir a causa raiz (possivelmente relacionada à inicialização do serviço SSH na instância) dentro do prazo do Challenge.
+
+Diante disso, optou-se por um deploy alternativo, utilizando a **Streamlit Community Cloud** — uma plataforma gratuita, oficial do Streamlit, voltada especificamente para hospedar aplicações como esta, com deploy direto a partir do repositório GitHub.
+
+**Aplicação publicada em:**
+[https://tedbukejojo-gamedev-agent-joicegenerich.streamlit.app/](https://tedbukejojo-gamedev-agent-joicegenerich.streamlit.app/)
 
 ## Evidências do funcionamento
 
-*(Seção a ser preenchida após o deploy, com link público e/ou capturas de tela da aplicação rodando na OCI.)*
+A aplicação está publicamente acessível e funcional no link acima. Abaixo, uma captura de tela demonstrando o agente respondendo a uma pergunta sobre desenvolvimento de jogos com Godot:
+
+![GameDev-Agent em funcionamento](docs/evidencia-funcionamento.png)
 
 ## Conclusão
 
