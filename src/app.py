@@ -2,7 +2,6 @@ import streamlit as st
 import sys
 import os
 
-# Permite importar os módulos da pasta src/ independente de onde o Streamlit for executado
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.vector_store import carregar_banco_vetorial
@@ -12,6 +11,7 @@ st.set_page_config(page_title="GameDev-Agent", page_icon="🎮")
 
 st.title("🎮 GameDev-Agent")
 st.caption("Assistente de IA especializado em desenvolvimento de jogos, baseado na documentação do Godot Engine.")
+
 with st.sidebar:
     st.header("Sobre o projeto")
     st.markdown(
@@ -48,8 +48,8 @@ with st.sidebar:
         - Google Gemini
         - Streamlit
         """
-
     )
+
     st.divider()
 
     st.markdown("Feito por **Joice Rodrigues** (Tedbukejojo)")
@@ -69,7 +69,27 @@ if "mensagens" not in st.session_state:
 if "pergunta_sugerida" not in st.session_state:
     st.session_state.pergunta_sugerida = None
 
-# Mostra sugestões de perguntas só quando a conversa ainda não começou
+
+def montar_historico_recente(mensagens, max_turnos=3):
+    """
+    Converte o histórico de mensagens do Streamlit (formato role/content)
+    em pares pergunta/resposta, limitado aos últimos turnos, para
+    alimentar a memória de curto prazo do agente.
+    """
+    turnos = []
+    pergunta_pendente = None
+
+    for mensagem in mensagens:
+        if mensagem["role"] == "user":
+            pergunta_pendente = mensagem["content"]
+        elif mensagem["role"] == "assistant" and pergunta_pendente is not None:
+            resposta_limpa = mensagem["content"].split("\n\n*Fontes:")[0]
+            turnos.append({"pergunta": pergunta_pendente, "resposta": resposta_limpa})
+            pergunta_pendente = None
+
+    return turnos[-max_turnos:]
+
+
 if not st.session_state.mensagens:
     st.markdown("**Experimente perguntar:**")
     perguntas_exemplo = [
@@ -89,12 +109,13 @@ for mensagem in st.session_state.mensagens:
 
 pergunta = st.chat_input("Pergunte algo sobre desenvolvimento de jogos com Godot...")
 
-# Se um botão de sugestão foi clicado, usa essa pergunta
 if st.session_state.pergunta_sugerida:
     pergunta = st.session_state.pergunta_sugerida
     st.session_state.pergunta_sugerida = None
 
 if pergunta:
+    historico = montar_historico_recente(st.session_state.mensagens)
+
     st.session_state.mensagens.append({"role": "user", "content": pergunta})
     with st.chat_message("user"):
         st.markdown(pergunta)
@@ -102,7 +123,7 @@ if pergunta:
     with st.chat_message("assistant"):
         with st.spinner("Buscando na base de conhecimento..."):
             try:
-                resposta, fontes = responder_pergunta(pergunta, vectorstore)
+                resposta, fontes = responder_pergunta(pergunta, vectorstore, historico=historico)
 
                 if "não encontrei" in resposta.lower():
                     texto_final = resposta

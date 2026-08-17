@@ -4,18 +4,31 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 load_dotenv()
 
 
-def montar_prompt(pergunta, chunks_relevantes):
+def montar_prompt(pergunta, chunks_relevantes, historico=None):
     """
     Monta o texto (prompt) que será enviado ao Gemini,
-    combinando os trechos encontrados com a pergunta do usuário.
+    combinando os trechos encontrados, o histórico recente da conversa
+    e a pergunta do usuário.
     """
     contexto = "\n\n---\n\n".join(chunk.page_content for chunk in chunks_relevantes)
+
+    secao_historico = ""
+    if historico:
+        linhas = []
+        for turno in historico:
+            linhas.append(f"Usuário: {turno['pergunta']}")
+            linhas.append(f"Assistente: {turno['resposta']}")
+        secao_historico = (
+            "Histórico recente da conversa (use apenas para entender o "
+            "contexto da pergunta, NÃO como fonte de informação):\n"
+            + "\n".join(linhas) + "\n\n"
+        )
 
     prompt = f"""Você é um assistente especializado em desenvolvimento de jogos.
 Responda à pergunta do usuário utilizando APENAS as informações do contexto abaixo.
 Se a resposta não estiver no contexto, diga claramente que não encontrou essa informação na base de conhecimento — não invente respostas.
 
-Contexto:
+{secao_historico}Contexto:
 {contexto}
 
 Pergunta: {pergunta}
@@ -42,13 +55,19 @@ def extrair_texto_resposta(resposta):
     return "".join(partes_texto)
 
 
-def responder_pergunta(pergunta, vectorstore, k=3):
+def responder_pergunta(pergunta, vectorstore, k=3, historico=None):
     """
-    Fluxo completo do RAG: busca os chunks relevantes,
-    monta o prompt e gera a resposta com o Gemini.
+    Fluxo completo do RAG: busca os chunks relevantes (usando também
+    a pergunta anterior, se houver, para melhorar buscas de seguimento),
+    monta o prompt com histórico e gera a resposta com o Gemini.
     """
-    chunks_relevantes = vectorstore.similarity_search(pergunta, k=k)
-    prompt = montar_prompt(pergunta, chunks_relevantes)
+    consulta_busca = pergunta
+    if historico:
+        ultima_pergunta = historico[-1]["pergunta"]
+        consulta_busca = f"{ultima_pergunta} {pergunta}"
+
+    chunks_relevantes = vectorstore.similarity_search(consulta_busca, k=k)
+    prompt = montar_prompt(pergunta, chunks_relevantes, historico=historico)
 
     llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash")
     resposta = llm.invoke(prompt)
