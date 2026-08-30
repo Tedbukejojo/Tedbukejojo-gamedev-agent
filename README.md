@@ -20,7 +20,7 @@ O GameDev-Agent permite que o usuário faça perguntas em linguagem natural e re
 
 - Demonstrar, na prática, o funcionamento de um agente RAG completo.
 - Aplicar conceitos de embeddings, busca vetorial e modelos de linguagem.
-- Entregar uma aplicação funcional, com deploy em nuvem (Oracle Cloud Infrastructure).
+- Entregar uma aplicação funcional, com deploy em nuvem e acesso público.
 
 ## Arquitetura
 
@@ -51,7 +51,7 @@ Resposta em linguagem natural
 5. Quando o usuário faz uma pergunta, ela também é transformada em embedding.
 6. O FAISS busca os chunks com embeddings mais próximos (mais relevantes) da pergunta.
 7. Os chunks relevantes e a pergunta são enviados ao modelo `gemini-3.5-flash`.
-8. O modelo gera uma resposta baseada apenas no contexto fornecido.
+8. O modelo gera uma resposta baseada apenas no contexto fornecido, também considerando as últimas trocas da conversa (memória de curto prazo) para entender perguntas de seguimento.
 9. A resposta é exibida ao usuário na interface Streamlit, junto com a fonte consultada.
 
 ## Tecnologias utilizadas
@@ -63,7 +63,7 @@ Resposta em linguagem natural
 - **Streamlit** — interface web interativa.
 - **python-dotenv** — gerenciamento seguro de variáveis de ambiente.
 - **Git e GitHub** — controle de versão e hospedagem do código.
-- **Oracle Cloud Infrastructure (OCI)** — hospedagem da aplicação em produção.
+- **Streamlit Community Cloud** — hospedagem da aplicação em produção (ver seção "Deploy" para detalhes sobre essa escolha).
 
 ## Estrutura do projeto
 
@@ -120,6 +120,8 @@ A aplicação abrirá automaticamente no navegador, geralmente em `http://localh
 
 Digite uma pergunta sobre desenvolvimento de jogos com Godot na caixa de chat, ou clique em uma das perguntas de exemplo sugeridas na tela inicial. A resposta será exibida junto com o(s) documento(s)-fonte consultado(s).
 
+O agente possui memória de curto prazo: é possível fazer perguntas de seguimento (ex.: "e ele é tipado?", depois de perguntar sobre o GDScript) sem precisar repetir o contexto, dentro da mesma sessão de conversa.
+
 ## Exemplos de perguntas
 
 - O que é o Godot Engine?
@@ -141,12 +143,24 @@ Digite uma pergunta sobre desenvolvimento de jogos com Godot na caixa de chat, o
 
 *(Demonstra que o agente não inventa respostas fora do escopo dos documentos.)*
 
+**Pergunta:** O que é o GDScript?
+
+**Resposta:** Com base no contexto fornecido, o GDScript é uma linguagem de programação de alto nível, orientada a objetos, imperativa e gradualmente tipada, construída especificamente para o Godot.
+
+*Fontes: godot_gdscript_basico.pdf*
+
+**Pergunta de seguimento:** E ele é tipado?
+
+**Resposta:** Com base no contexto fornecido, sim, o GDScript é uma linguagem gradualmente tipada (gradually typed)...
+
+*(Demonstra a memória de curto prazo: o agente entendeu que "ele" se refere ao GDScript, mencionado na pergunta anterior, sem precisar que o usuário repetisse o termo.)*
+
 ## Limitações
 
 - A base de conhecimento atual contém 4 páginas da documentação do Godot Engine, com fins de demonstração — não cobre a documentação completa.
 - O pacote `langchain-community` (usado para o FAISS) foi anunciado como "sunset" pela equipe do LangChain, e está em modo de manutenção, sem novas funcionalidades.
 - O tier gratuito da API do Gemini possui limite de requisições por minuto; a geração do banco vetorial é feita em lotes pequenos, com pausas entre eles, para respeitar esse limite.
-- O agente não mantém memória de perguntas anteriores durante a geração da resposta — cada pergunta é processada de forma independente.
+- O agente possui memória apenas de curto prazo (últimos 3 turnos da conversa, mantida somente durante a sessão ativa no navegador) — não há memória persistente entre sessões diferentes.
 
 ## Deploy
 
