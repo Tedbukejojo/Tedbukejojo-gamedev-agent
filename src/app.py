@@ -6,13 +6,41 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.vector_store import carregar_banco_vetorial
 from src.rag_agent import responder_pergunta
+from src.chat_storage import (
+    inicializar_banco,
+    criar_nova_conversa,
+    salvar_mensagem,
+    listar_conversas,
+    carregar_mensagens,
+)
 
 st.set_page_config(page_title="GameDev-Agent", page_icon="🎮")
+
+inicializar_banco()
 
 st.title("🎮 GameDev-Agent")
 st.caption("Assistente de IA especializado em desenvolvimento de jogos, baseado na documentação do Godot Engine.")
 
 with st.sidebar:
+    st.subheader("💬 Conversas")
+
+    if st.button("➕ Novo Chat", use_container_width=True):
+        st.session_state.conversa_id = criar_nova_conversa()
+        st.session_state.mensagens = []
+        st.session_state.pergunta_sugerida = None
+        st.rerun()
+
+    conversas = listar_conversas()
+    for conversa in conversas:
+        rotulo = conversa["titulo"] or "Nova conversa"
+        if st.button(rotulo, key=f"conversa_{conversa['id']}", use_container_width=True):
+            st.session_state.conversa_id = conversa["id"]
+            st.session_state.mensagens = carregar_mensagens(conversa["id"])
+            st.session_state.pergunta_sugerida = None
+            st.rerun()
+
+    st.divider()
+
     st.header("Sobre o projeto")
     st.markdown(
         """
@@ -47,6 +75,7 @@ with st.sidebar:
         - FAISS
         - Google Gemini
         - Streamlit
+        - SQLite
         """
     )
 
@@ -63,6 +92,9 @@ def carregar_vectorstore():
 
 vectorstore = carregar_vectorstore()
 
+if "conversa_id" not in st.session_state:
+    st.session_state.conversa_id = criar_nova_conversa()
+
 if "mensagens" not in st.session_state:
     st.session_state.mensagens = []
 
@@ -72,7 +104,7 @@ if "pergunta_sugerida" not in st.session_state:
 
 def montar_historico_recente(mensagens, max_turnos=3):
     """
-    Converte o histórico de mensagens do Streamlit (formato role/content)
+    Converte o histórico de mensagens (formato role/content)
     em pares pergunta/resposta, limitado aos últimos turnos, para
     alimentar a memória de curto prazo do agente.
     """
@@ -117,6 +149,7 @@ if pergunta:
     historico = montar_historico_recente(st.session_state.mensagens)
 
     st.session_state.mensagens.append({"role": "user", "content": pergunta})
+    salvar_mensagem(st.session_state.conversa_id, "user", pergunta)
     with st.chat_message("user"):
         st.markdown(pergunta)
 
@@ -141,3 +174,4 @@ if pergunta:
             st.markdown(texto_final)
 
     st.session_state.mensagens.append({"role": "assistant", "content": texto_final})
+    salvar_mensagem(st.session_state.conversa_id, "assistant", texto_final)
